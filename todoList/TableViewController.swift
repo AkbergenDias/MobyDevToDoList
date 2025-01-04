@@ -9,137 +9,89 @@ import UIKit
 
 class TableViewController: UITableViewController {
     
-    var arrayTask:[TaskItem] = []
+    var arrayTask: [TaskItem] = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        // Uncomment the following line to preserve selection between presentations
-        // self.clearsSelectionOnViewWillAppear = false
-
-        // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
-        // self.navigationItem.rightBarButtonItem = self.editButtonItem
+        self.clearsSelectionOnViewWillAppear = false
+        self.navigationItem.rightBarButtonItem = self.editButtonItem
     }
     
     override func viewWillAppear(_ animated: Bool) {
-//        if let taskArray = UserDefaults.standard.array(forKey: "taskArray") as? [String] {
-//            array = taskArray
-//            tableView.reloadData()
-//        }
-        
+        super.viewWillAppear(animated)
         do {
             if let data = UserDefaults.standard.data(forKey: "taskItemArray") {
-                
+                print("Found saved data")
                 let array = try JSONDecoder().decode([TaskItem].self, from: data)
-                
+                print("Successfully decoded \(array.count) tasks")
                 arrayTask = array
-                
                 tableView.reloadData()
+            } else {
+                print("No saved data found")
             }
         } catch {
-            print("unable to encode \(error)")
+            print("Decoding error details: \(error)")
+            UserDefaults.standard.removeObject(forKey: "taskItemArray")
         }
     }
     
     func saveTasks() {
         do {
-            
-            let encodedata = try JSONEncoder().encode(arrayTask)
-            
-            UserDefaults.standard.set(encodedata, forKey: "taskItemArray")
-            
+            let encodedData = try JSONEncoder().encode(arrayTask)
+            UserDefaults.standard.set(encodedData, forKey: "taskItemArray")
         } catch {
-            print("unable to encode \(error)")
+            print("Unable to encode: \(error)")
         }
-        
     }
 
-    // MARK: - Table view data source
-
     override func numberOfSections(in tableView: UITableView) -> Int {
-        // #warning Incomplete implementation, return the number of sections
         return 1
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        // #warning Incomplete implementation, return the number of rows
         return arrayTask.count
     }
 
-    
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = UITableViewCell(style: .default, reuseIdentifier: "Cell")
+        let cell = UITableViewCell(style: .subtitle, reuseIdentifier: "Cell")
+        let task = arrayTask[indexPath.row]
 
-        // Configure the cell...
-        
-        cell.textLabel?.text = arrayTask[indexPath.row].name
-        
-        if arrayTask[indexPath.row].isComplete {
-            cell.accessoryType = .checkmark
-        } else {
-            cell.accessoryType = .none
-        }
+        cell.textLabel?.text = task.name
+        cell.detailTextLabel?.text = task.subtext
+        cell.accessoryType = .disclosureIndicator
 
         return cell
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        arrayTask[indexPath.row].isComplete.toggle()
+        let detailsVC = DetailsViewController()
+        detailsVC.task = arrayTask[indexPath.row]
+        detailsVC.onTaskUpdated = { [weak self] updatedTask in
+            guard let self = self else { return }
+
+            self.arrayTask[indexPath.row] = updatedTask
+
+            self.saveTasks()
+
+            self.tableView.reloadRows(at: [indexPath], with: .automatic)
+        }
         
+        navigationController?.pushViewController(detailsVC, animated: true)
+        
+        tableView.deselectRow(at: indexPath, animated: true)
+    }
+
+    func deleteTask(at indexPath: IndexPath) {
+        arrayTask.remove(at: indexPath.row)
         saveTasks()
-        
-        tableView.reloadData()
+        tableView.deleteRows(at: [indexPath], with: .fade)
     }
-    
 
-    /*
-    // Override to support conditional editing of the table view.
-    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-        // Return false if you do not want the specified item to be editable.
-        return true
+    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { (action, view, completionHandler) in
+            self.deleteTask(at: indexPath)
+            completionHandler(true)
+        }
+        return UISwipeActionsConfiguration(actions: [deleteAction])
     }
-    */
-
-    
-    // Override to support editing the table view.
-    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-            // Delete the row from the data source
-            
-            arrayTask.remove(at: indexPath.row)
-            
-            saveTasks()
-            
-            tableView.deleteRows(at: [indexPath], with: .fade)
-        } else if editingStyle == .insert {
-            // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
-        }    
-    }
-    
-
-    /*
-    // Override to support rearranging the table view.
-    override func tableView(_ tableView: UITableView, moveRowAt fromIndexPath: IndexPath, to: IndexPath) {
-
-    }
-    */
-
-    /*
-    // Override to support conditional rearranging of the table view.
-    override func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
-        // Return false if you do not want the item to be re-orderable.
-        return true
-    }
-    */
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
-    }
-    */
-
 }
