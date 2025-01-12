@@ -7,21 +7,24 @@
 
 import UIKit
 
-class ViewController: UIViewController {
+class AddTaskViewController: UIViewController {
     
-    @IBOutlet weak var textfield: UITextField!
+    @IBOutlet weak var taskTitleTextField: UITextField!
     
-    @IBOutlet weak var tasksubtext: UITextField!
+    @IBOutlet weak var taskDescriptionTextField: UITextField!
+    
+    @IBOutlet weak var taskDeadlinePicker: UIDatePicker!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
     }
-    @IBAction func addTask(_ sender: Any) {
-        guard let taskName = textfield.text, !taskName.isEmpty,
-              let taskSubtext = tasksubtext.text, !taskSubtext.isEmpty else {
+    @IBAction func handleAddTask(_ sender: Any) {
+        guard let taskName = taskTitleTextField.text, !taskName.isEmpty,
+              let taskSubtext = taskDescriptionTextField.text, !taskSubtext.isEmpty else {
             return
         }
         
-        let newTask = TaskItem(name: taskName, subtext: taskSubtext)
+        let newTask = TaskItem(title: taskName, description: taskSubtext, deadline: taskDeadlinePicker.date)
         
         do {
             if let data = UserDefaults.standard.data(forKey: "taskItemArray") {
@@ -34,8 +37,8 @@ class ViewController: UIViewController {
                 UserDefaults.standard.set(encodedData, forKey: "taskItemArray")
             }
             
-            textfield.text = ""
-            tasksubtext.text = ""
+            taskTitleTextField.text = ""
+            taskDescriptionTextField.text = ""
             
             navigationController?.popViewController(animated: true)
             

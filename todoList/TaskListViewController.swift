@@ -7,7 +7,7 @@
 
 import UIKit
 
-class TableViewController: UITableViewController {
+class TaskListViewController: UITableViewController {
     
     var arrayTask: [TaskItem] = []
 
@@ -35,7 +35,7 @@ class TableViewController: UITableViewController {
         }
     }
     
-    func saveTasks() {
+    func saveTaskList() {
         do {
             let encodedData = try JSONEncoder().encode(arrayTask)
             UserDefaults.standard.set(encodedData, forKey: "taskItemArray")
@@ -56,8 +56,8 @@ class TableViewController: UITableViewController {
         let cell = UITableViewCell(style: .subtitle, reuseIdentifier: "Cell")
         let task = arrayTask[indexPath.row]
 
-        cell.textLabel?.text = task.name
-        cell.detailTextLabel?.text = task.subtext
+        cell.textLabel?.text = task.title
+        cell.detailTextLabel?.text = task.description
         cell.accessoryType = .disclosureIndicator
 
         return cell
@@ -71,7 +71,7 @@ class TableViewController: UITableViewController {
 
             self.arrayTask[indexPath.row] = updatedTask
 
-            self.saveTasks()
+            self.saveTaskList()
 
             self.tableView.reloadRows(at: [indexPath], with: .automatic)
         }
@@ -81,15 +81,15 @@ class TableViewController: UITableViewController {
         tableView.deselectRow(at: indexPath, animated: true)
     }
 
-    func deleteTask(at indexPath: IndexPath) {
+    func removeTask(at indexPath: IndexPath) {
         arrayTask.remove(at: indexPath.row)
-        saveTasks()
+        saveTaskList()
         tableView.deleteRows(at: [indexPath], with: .fade)
     }
 
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { (action, view, completionHandler) in
-            self.deleteTask(at: indexPath)
+            self.removeTask(at: indexPath)
             completionHandler(true)
         }
         return UISwipeActionsConfiguration(actions: [deleteAction])
