@@ -7,7 +7,7 @@
 
 import UIKit
 
-class TableViewController: UITableViewController {
+class TaskListViewController: UITableViewController {
     
     var arrayTask: [TaskItem] = []
 
@@ -20,7 +20,7 @@ class TableViewController: UITableViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         do {
-            if let data = UserDefaults.standard.data(forKey: "taskItemArray") {
+            if let data = UserDefaults.standard.data(forKey: "savedTasks") {
                 print("Found saved data")
                 let array = try JSONDecoder().decode([TaskItem].self, from: data)
                 print("Successfully decoded \(array.count) tasks")
@@ -31,14 +31,14 @@ class TableViewController: UITableViewController {
             }
         } catch {
             print("Decoding error details: \(error)")
-            UserDefaults.standard.removeObject(forKey: "taskItemArray")
+            UserDefaults.standard.removeObject(forKey: "savedTasks")
         }
     }
     
-    func saveTasks() {
+    func saveTaskList() {
         do {
             let encodedData = try JSONEncoder().encode(arrayTask)
-            UserDefaults.standard.set(encodedData, forKey: "taskItemArray")
+            UserDefaults.standard.set(encodedData, forKey: "savedTasks")
         } catch {
             print("Unable to encode: \(error)")
         }
@@ -51,45 +51,82 @@ class TableViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return arrayTask.count
     }
-
+// CUSTOMIZATION, LEARN LATER MORE
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell(style: .subtitle, reuseIdentifier: "Cell")
         let task = arrayTask[indexPath.row]
+        //LEft Side
+        cell.textLabel?.text = task.title
+        cell.detailTextLabel?.text = task.description
+        cell.detailTextLabel?.numberOfLines = 1
+        //Right Side What a mess omg
+        let formatter = DateFormatter()
+         formatter.dateStyle = .medium
+         formatter.timeStyle = .none
+         let deadlineString = formatter.string(from: task.deadline)
+         let countdown = timeRemaing(to: task.deadline)
+        
+        let rightLabel = UILabel()
+        rightLabel.text = "\(deadlineString)\n(\(countdown))"
+        rightLabel.textAlignment = .right
+        rightLabel.numberOfLines = 2
+        rightLabel.sizeToFit()
+        
+        cell.accessoryView = rightLabel
 
-        cell.textLabel?.text = task.name
-        cell.detailTextLabel?.text = task.subtext
-        cell.accessoryType = .disclosureIndicator
-
+        
         return cell
+    }
+    // here we show how much time is remaining until stuff happens
+    func timeRemaing (to deadline: Date) -> String {
+        let now = Date()
+        let timeInterval = deadline.timeIntervalSince(now)
+        
+        if timeInterval <= 0 {
+            return "Overdue"
+        }
+        let days = Int(timeInterval) / (60 * 60 * 24)
+            let months = days / 30
+            let weeks = (days % 30) / 7
+            let remainingDays = days % 7
+            
+            if months > 0 {
+                return "\(months) months remaining"
+            } else if weeks > 0 {
+                return "\(weeks) weeks, \(remainingDays) days remaining"
+            } else {
+                return "\(remainingDays) days remaining"
+            }
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let detailsVC = DetailsViewController()
+        //this thing is the reason why  VC crashed whie tapping aka didselectRowAt and showed nill on title desc date etc
+        if let detailsVC = storyboard?.instantiateViewController(withIdentifier: "DetailsVC") as? DetailsViewController {
+
         detailsVC.task = arrayTask[indexPath.row]
         detailsVC.onTaskUpdated = { [weak self] updatedTask in
             guard let self = self else { return }
-
+            
             self.arrayTask[indexPath.row] = updatedTask
-
-            self.saveTasks()
-
+            self.saveTaskList()
             self.tableView.reloadRows(at: [indexPath], with: .automatic)
         }
         
         navigationController?.pushViewController(detailsVC, animated: true)
+    }
         
         tableView.deselectRow(at: indexPath, animated: true)
     }
 
-    func deleteTask(at indexPath: IndexPath) {
+    func removeTask(at indexPath: IndexPath) {
         arrayTask.remove(at: indexPath.row)
-        saveTasks()
+        saveTaskList()
         tableView.deleteRows(at: [indexPath], with: .fade)
     }
 
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { (action, view, completionHandler) in
-            self.deleteTask(at: indexPath)
+            self.removeTask(at: indexPath)
             completionHandler(true)
         }
         return UISwipeActionsConfiguration(actions: [deleteAction])

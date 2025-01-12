@@ -11,43 +11,38 @@ class DetailsViewController: UIViewController {
     var task: TaskItem?
     var onTaskUpdated: ((TaskItem) -> Void)?
     
-    private let taskNameTextField = UITextField()
-
+    @IBOutlet weak var taskTitleTextField: UITextField!
+    @IBOutlet weak var taskDescriptionTextField: UITextField!
+    @IBOutlet weak var taskDeadlinePicker: UIDatePicker!
+    @IBOutlet weak var saveTask: UIButton!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupUI()
-    }
-
-    private func setupUI() {
-        view.backgroundColor = .white
         
-        taskNameTextField.translatesAutoresizingMaskIntoConstraints = false
-        taskNameTextField.borderStyle = .roundedRect
-        taskNameTextField.textAlignment = .center
-        taskNameTextField.font = UIFont.systemFont(ofSize: 18)
-        taskNameTextField.text = task?.name
+        /*print("taskTitleTextField is \(taskTitleTextField == nil ? "nil" : "not nil")")
+            print("taskDescriptionTextField is \(taskDescriptionTextField == nil ? "nil" : "not nil")")
+            print("taskDeadlinePicker is \(taskDeadlinePicker == nil ? "nil" : "not nil")")*/
         
-        view.addSubview(taskNameTextField)
+        //Use it for debugg
         
-        NSLayoutConstraint.activate([
-            taskNameTextField.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            taskNameTextField.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            taskNameTextField.widthAnchor.constraint(equalToConstant: 250)
-        ])
-        
-        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Save", style: .plain, target: self, action: #selector(saveTaskName))
+        taskTitleTextField.text = task?.title
+        taskDescriptionTextField.text = task?.description
+        taskDeadlinePicker.date = task?.deadline ?? Date()
     }
     
-    @objc private func saveTaskName() {
-        guard let newName = taskNameTextField.text, !newName.isEmpty else {
-                    return
-                }
-        if let newName = taskNameTextField.text, !newName.isEmpty, var task = task {
-            task.name = newName
-            self.task = task
-            
-            onTaskUpdated?(task)
-            navigationController?.popViewController(animated: true)
+    @IBAction func saveTaskDetails(_ sender: UIButton) {
+        guard let updatedTitle = taskTitleTextField.text, !updatedTitle.isEmpty,
+              let updatedDescription = taskDescriptionTextField.text, !updatedDescription.isEmpty else {
+            return
         }
+        
+        let updatedTask = TaskItem(
+            title: updatedTitle,
+            description: updatedDescription,
+            deadline: taskDeadlinePicker.date
+        )
+        
+        onTaskUpdated?(updatedTask)
+        navigationController?.popViewController(animated: true)
     }
 }

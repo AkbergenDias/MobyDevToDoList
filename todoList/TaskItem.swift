@@ -8,6 +8,7 @@
 import Foundation
 
 struct TaskItem: Codable {
-    var name: String
-    var subtext: String
+    var title: String
+    var description: String
+    var deadline: Date
 }
